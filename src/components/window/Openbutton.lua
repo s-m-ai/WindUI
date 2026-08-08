@@ -4,12 +4,9 @@ local Creator = require("../../modules/Creator")
 local New = Creator.New
 local Tween = Creator.Tween
 
-
 local cloneref = (cloneref or clonereference or function(instance) return instance end)
 
-
 local UserInputService = cloneref(game:GetService("UserInputService"))
-
 
 function OpenButton.New(Window)
     local OpenButtonMain = {
@@ -18,24 +15,13 @@ function OpenButton.New(Window)
     
     local Icon
     
-    
-    
-    -- Icon = New("ImageLabel", {
-    --     Image = "",
-    --     Size = UDim2.new(0,22,0,22),
-    --     Position = UDim2.new(0.5,0,0.5,0),
-    --     LayoutOrder = -1,
-    --     AnchorPoint = Vector2.new(0.5,0.5),
-    --     BackgroundTransparency = 1,
-    --     Name = "Icon"
-    -- })
-
     local Title = New("TextLabel", {
         Text = Window.Title,
         TextSize = 17,
         FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
         BackgroundTransparency = 1,
         AutomaticSize = "XY",
+        TextColor3 = Color3.new(1,1,1),
     })
 
     local Drag = New("Frame", {
@@ -57,6 +43,7 @@ function OpenButton.New(Window)
             ImageTransparency = .3,
         })
     })
+    
     local Divider = New("Frame", {
         Size = UDim2.new(0,1,1,0),
         Position = UDim2.new(0,20+16,0.5,0),
@@ -75,33 +62,29 @@ function OpenButton.New(Window)
         Visible = false,
     })
 
-
     local UIScale = New("UIScale", {
         Scale = 1,
     })
 
+    -- สร้าง GUI Square สีดำ ขอบมน Outline สีขาว
     local Button = New("Frame", {
         Size = UDim2.new(0,0,0,44),
         AutomaticSize = "X",
         Parent = Container,
         Active = false,
-        BackgroundTransparency = .25,
+        BackgroundColor3 = Color3.new(0,0,0), -- สีดำ
+        BackgroundTransparency = 0,
         ZIndex = 99,
-        BackgroundColor3 = Color3.new(0,0,0),
     }, {
         UIScale,
-	    New("UICorner", {
-            CornerRadius = UDim.new(1,0)
+        New("UICorner", {
+            CornerRadius = UDim.new(0, 12) -- ขอบมน
         }),
         New("UIStroke", {
-            Thickness = 1,
+            Thickness = 2,
             ApplyStrokeMode = "Border",
-            Color = Color3.new(1,1,1),
+            Color = Color3.new(1,1,1), -- สีขาว
             Transparency = 0,
-        }, {
-            New("UIGradient", {
-                Color = ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff"))
-            })
         }),
         Drag,
         Divider,
@@ -115,13 +98,12 @@ function OpenButton.New(Window)
         New("TextButton",{
             AutomaticSize = "XY",
             Active = true,
-            BackgroundTransparency = 1, -- .93
+            BackgroundTransparency = 1,
             Size = UDim2.new(0,0,0,44-(4*2)),
-            --Position = UDim2.new(0,20+16+16+1,0,0),
             BackgroundColor3 = Color3.new(1,1,1),
         }, {
             New("UICorner", {
-                CornerRadius = UDim.new(1,-4)
+                CornerRadius = UDim.new(0, 8)
             }),
             Icon,
             New("UIListLayout", {
@@ -142,8 +124,6 @@ function OpenButton.New(Window)
     })
     
     OpenButtonMain.Button = Button
-    
-    
     
     function OpenButtonMain:SetIcon(newIcon)
         if Icon then
@@ -169,8 +149,6 @@ function OpenButton.New(Window)
         OpenButtonMain:SetIcon(Window.Icon)
     end
     
-    
-    
     Creator.AddSignal(Button:GetPropertyChangedSignal("AbsoluteSize"), function()
         Container.Size = UDim2.new(
             0, Button.AbsoluteSize.X,
@@ -185,8 +163,44 @@ function OpenButton.New(Window)
         Tween(Button.TextButton, .1, {BackgroundTransparency = 1}):Play()
     end)
     
+    -- ระบบลากสำหรับมือถือและ PC
     local DragModule = Creator.Drag(Container)
     
+    -- เพิ่มระบบลากสำหรับมือถือ
+    local function setupMobileDrag()
+        local isDragging = false
+        local dragStart = nil
+        local startPos = nil
+        
+        Container.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                isDragging = true
+                dragStart = input.Position
+                startPos = Container.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        isDragging = false
+                    end
+                end)
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if isDragging and input.UserInputType == Enum.UserInputType.Touch then
+                local delta = input.Position - dragStart
+                local newPos = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+                Container.Position = newPos
+            end
+        end)
+    end
+    
+    -- เปิดใช้งานการลากทั้ง PC และมือถือ
+    setupMobileDrag()
     
     function OpenButtonMain:Visible(v)
         Container.Visible = v
@@ -205,14 +219,10 @@ function OpenButton.New(Window)
             OnlyIcon = OpenButtonConfig.OnlyIcon or false,
             Draggable = OpenButtonConfig.Draggable or nil,
             OnlyMobile = OpenButtonConfig.OnlyMobile,
-            CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(1, 0),
+            CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(0, 12),
             StrokeThickness = OpenButtonConfig.StrokeThickness or 2,
             Scale = OpenButtonConfig.Scale or 1,
-            Color = OpenButtonConfig.Color 
-                or ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff")),
         }
-        
-        -- wtf lol
         
         if OpenButtonModule.Enabled == false then
             Window.IsOpenButtonEnabled = false
@@ -223,7 +233,6 @@ function OpenButton.New(Window)
         else
             Window.IsPC = false
         end
-        
         
         if OpenButtonModule.Draggable == false and Drag and Divider then
             Drag.Visible = OpenButtonModule.Draggable
@@ -248,10 +257,6 @@ function OpenButton.New(Window)
             Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7+4)
         end
         
-        --OpenButtonMain:Visible((not OpenButtonModule.OnlyMobile) or (not Window.IsPC))
-        
-        --if not OpenButton.Visible then return end
-        
         if Title then
             if OpenButtonModule.Title then
                 Title.Text = OpenButtonModule.Title
@@ -265,13 +270,12 @@ function OpenButton.New(Window)
             OpenButtonMain:SetIcon(OpenButtonModule.Icon)
         end
 
-        Button.UIStroke.UIGradient.Color = OpenButtonModule.Color
-        if Glow then
-            Glow.UIGradient.Color = OpenButtonModule.Color
-        end
-
+        -- ใช้ CornerRadius แบบ Square (ขอบมน)
         Button.UICorner.CornerRadius = OpenButtonModule.CornerRadius
-        Button.TextButton.UICorner.CornerRadius = UDim.new(OpenButtonModule.CornerRadius.Scale, OpenButtonModule.CornerRadius.Offset-4)
+        Button.TextButton.UICorner.CornerRadius = UDim.new(
+            OpenButtonModule.CornerRadius.Scale, 
+            math.max(0, OpenButtonModule.CornerRadius.Offset - 4)
+        )
         Button.UIStroke.Thickness = OpenButtonModule.StrokeThickness
         
         OpenButtonMain:SetScale(OpenButtonModule.Scale)
@@ -279,7 +283,5 @@ function OpenButton.New(Window)
 
     return OpenButtonMain
 end
-
-
 
 return OpenButton
