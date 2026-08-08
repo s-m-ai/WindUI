@@ -15,13 +15,23 @@ function OpenButton.New(Window)
     
     local Icon
     
+    -- Icon = New("ImageLabel", {
+    --     Image = "",
+    --     Size = UDim2.new(0,22,0,22),
+    --     Position = UDim2.new(0.5,0,0.5,0),
+    --     LayoutOrder = -1,
+    --     AnchorPoint = Vector2.new(0.5,0.5),
+    --     BackgroundTransparency = 1,
+    --     Name = "Icon"
+    -- })
+
     local Title = New("TextLabel", {
         Text = Window.Title,
         TextSize = 17,
         FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
         BackgroundTransparency = 1,
         AutomaticSize = "XY",
-        TextColor3 = Color3.new(1,1,1),
+        TextColor3 = Color3.new(1,1,1), -- เพิ่มสีข้อความขาว
     })
 
     local Drag = New("Frame", {
@@ -43,7 +53,6 @@ function OpenButton.New(Window)
             ImageTransparency = .3,
         })
     })
-    
     local Divider = New("Frame", {
         Size = UDim2.new(0,1,1,0),
         Position = UDim2.new(0,20+16,0.5,0),
@@ -66,15 +75,15 @@ function OpenButton.New(Window)
         Scale = 1,
     })
 
-    -- สร้าง GUI Square สีดำ ขอบมน Outline สีขาว
+    -- ปรับแต่งเป็น Square สีดำ ขอบมน Outline สีขาว
     local Button = New("Frame", {
         Size = UDim2.new(0,0,0,44),
         AutomaticSize = "X",
         Parent = Container,
         Active = false,
-        BackgroundColor3 = Color3.new(0,0,0), -- สีดำ
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 0, -- ทำให้ทึบ
         ZIndex = 99,
+        BackgroundColor3 = Color3.new(0,0,0), -- สีดำ
     }, {
         UIScale,
         New("UICorner", {
@@ -98,8 +107,9 @@ function OpenButton.New(Window)
         New("TextButton",{
             AutomaticSize = "XY",
             Active = true,
-            BackgroundTransparency = 1,
+            BackgroundTransparency = 1, -- .93
             Size = UDim2.new(0,0,0,44-(4*2)),
+            --Position = UDim2.new(0,20+16+16+1,0,0),
             BackgroundColor3 = Color3.new(1,1,1),
         }, {
             New("UICorner", {
@@ -163,43 +173,62 @@ function OpenButton.New(Window)
         Tween(Button.TextButton, .1, {BackgroundTransparency = 1}):Play()
     end)
     
-    -- ระบบลากสำหรับมือถือและ PC
     local DragModule = Creator.Drag(Container)
     
-    -- เพิ่มระบบลากสำหรับมือถือ
+    -- เพิ่มระบบลากสำหรับมือถือ โดยไม่กระทบระบบเดิม
+    local touchData = {
+        isDragging = false,
+        dragStart = nil,
+        startPos = nil,
+        connection = nil
+    }
+    
+    -- สร้างฟังก์ชันสำหรับจัดการการลากบนมือถือ
     local function setupMobileDrag()
-        local isDragging = false
-        local dragStart = nil
-        local startPos = nil
+        -- เช็คว่ามี Container และใช้งานได้
+        if not Container then return end
         
-        Container.InputBegan:Connect(function(input)
+        -- Event สำหรับเริ่มลาก
+        local beganConnection = Container.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.Touch then
-                isDragging = true
-                dragStart = input.Position
-                startPos = Container.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        isDragging = false
-                    end
-                end)
+                touchData.isDragging = true
+                touchData.dragStart = input.Position
+                touchData.startPos = Container.Position
             end
         end)
         
-        UserInputService.InputChanged:Connect(function(input)
-            if isDragging and input.UserInputType == Enum.UserInputType.Touch then
-                local delta = input.Position - dragStart
+        -- Event สำหรับเปลี่ยนแปลงตำแหน่ง
+        local changedConnection = UserInputService.InputChanged:Connect(function(input)
+            if touchData.isDragging and input.UserInputType == Enum.UserInputType.Touch then
+                local delta = input.Position - touchData.dragStart
                 local newPos = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y
+                    touchData.startPos.X.Scale,
+                    touchData.startPos.X.Offset + delta.X,
+                    touchData.startPos.Y.Scale,
+                    touchData.startPos.Y.Offset + delta.Y
                 )
                 Container.Position = newPos
             end
         end)
+        
+        -- Event สำหรับสิ้นสุดการลาก
+        local endedConnection = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                touchData.isDragging = false
+                touchData.dragStart = nil
+                touchData.startPos = nil
+            end
+        end)
+        
+        -- เก็บ connections เพื่อใช้ในการ cleanup
+        touchData.connection = {
+            began = beganConnection,
+            changed = changedConnection,
+            ended = endedConnection
+        }
     end
     
-    -- เปิดใช้งานการลากทั้ง PC และมือถือ
+    -- เรียกใช้ระบบลากสำหรับมือถือ
     setupMobileDrag()
     
     function OpenButtonMain:Visible(v)
@@ -222,6 +251,8 @@ function OpenButton.New(Window)
             CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(0, 12),
             StrokeThickness = OpenButtonConfig.StrokeThickness or 2,
             Scale = OpenButtonConfig.Scale or 1,
+            Color = OpenButtonConfig.Color 
+                or ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff")),
         }
         
         if OpenButtonModule.Enabled == false then
@@ -270,7 +301,12 @@ function OpenButton.New(Window)
             OpenButtonMain:SetIcon(OpenButtonModule.Icon)
         end
 
-        -- ใช้ CornerRadius แบบ Square (ขอบมน)
+        -- ใช้สี Gradient จาก config (แต่ไม่ใช้กับพื้นหลังสีดำ)
+        if Glow then
+            Glow.UIGradient.Color = OpenButtonModule.Color
+        end
+
+        -- ตั้งค่า Corner Radius แบบ Square
         Button.UICorner.CornerRadius = OpenButtonModule.CornerRadius
         Button.TextButton.UICorner.CornerRadius = UDim.new(
             OpenButtonModule.CornerRadius.Scale, 
