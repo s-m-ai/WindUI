@@ -1,323 +1,165 @@
-local OpenButton = {}
+local Openbutton = {}
+-- ============================================================
+-- Open Button (ลากได้ทุกที่)
+-- ============================================================
 
-local Creator = require("../../modules/Creator")
-local New = Creator.New
-local Tween = Creator.Tween
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
-local cloneref = (cloneref or clonereference or function(instance) return instance end)
+local Player = Players.LocalPlayer
 
-local UserInputService = cloneref(game:GetService("UserInputService"))
-
-function OpenButton.New(Window)
-    local OpenButtonMain = {
-        Button = nil
-    }
-    
-    local Icon
-    
-    -- Icon = New("ImageLabel", {
-    --     Image = "",
-    --     Size = UDim2.new(0,22,0,22),
-    --     Position = UDim2.new(0.5,0,0.5,0),
-    --     LayoutOrder = -1,
-    --     AnchorPoint = Vector2.new(0.5,0.5),
-    --     BackgroundTransparency = 1,
-    --     Name = "Icon"
-    -- })
-
-    local Title = New("TextLabel", {
-        Text = Window.Title,
-        TextSize = 17,
-        FontFace = Font.new(Creator.Font, Enum.FontWeight.Medium),
-        BackgroundTransparency = 1,
-        AutomaticSize = "XY",
-        TextColor3 = Color3.new(1,1,1), -- เพิ่มสีข้อความขาว
-    })
-
-    local Drag = New("Frame", {
-        Size = UDim2.new(0,44-8,0,44-8),
-        BackgroundTransparency = 1, 
-        Name = "Drag",
-    }, {
-        New("ImageLabel", {
-            Image = Creator.Icon("move")[1],
-            ImageRectOffset = Creator.Icon("move")[2].ImageRectPosition,
-            ImageRectSize = Creator.Icon("move")[2].ImageRectSize,
-            Size = UDim2.new(0,18,0,18),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0.5,0,0.5,0),
-            AnchorPoint = Vector2.new(0.5,0.5),
-            ThemeTag = {
-                ImageColor3 = "Icon",
-            },
-            ImageTransparency = .3,
-        })
-    })
-    local Divider = New("Frame", {
-        Size = UDim2.new(0,1,1,0),
-        Position = UDim2.new(0,20+16,0.5,0),
-        AnchorPoint = Vector2.new(0,0.5),
-        BackgroundColor3 = Color3.new(1,1,1),
-        BackgroundTransparency = .9,
-    })
-
-    local Container = New("Frame", {
-        Size = UDim2.new(0,0,0,0),
-        Position = UDim2.new(0.5,0,0,6+44/2),
-        AnchorPoint = Vector2.new(0.5,0.5),
-        Parent = Window.Parent,
-        BackgroundTransparency = 1,
-        Active = true,
-        Visible = false,
-    })
-
-    local UIScale = New("UIScale", {
-        Scale = 1,
-    })
-
-    -- ปรับแต่งเป็น Square สีดำ ขอบมน Outline สีขาว
-    local Button = New("Frame", {
-        Size = UDim2.new(0,0,0,44),
-        AutomaticSize = "X",
-        Parent = Container,
-        Active = false,
-        BackgroundTransparency = 0, -- ทำให้ทึบ
-        ZIndex = 99,
-        BackgroundColor3 = Color3.new(0,0,0), -- สีดำ
-    }, {
-        UIScale,
-        New("UICorner", {
-            CornerRadius = UDim.new(0, 12) -- ขอบมน
-        }),
-        New("UIStroke", {
-            Thickness = 2,
-            ApplyStrokeMode = "Border",
-            Color = Color3.new(1,1,1), -- สีขาว
-            Transparency = 0,
-        }),
-        Drag,
-        Divider,
-        
-        New("UIListLayout", {
-            Padding = UDim.new(0, 4),
-            FillDirection = "Horizontal",
-            VerticalAlignment = "Center",
-        }),
-        
-        New("TextButton",{
-            AutomaticSize = "XY",
-            Active = true,
-            BackgroundTransparency = 1, -- .93
-            Size = UDim2.new(0,0,0,44-(4*2)),
-            --Position = UDim2.new(0,20+16+16+1,0,0),
-            BackgroundColor3 = Color3.new(1,1,1),
-        }, {
-            New("UICorner", {
-                CornerRadius = UDim.new(0, 8)
-            }),
-            Icon,
-            New("UIListLayout", {
-                Padding = UDim.new(0, Window.UIPadding),
-                FillDirection = "Horizontal",
-                VerticalAlignment = "Center",
-            }),
-            Title,
-            New("UIPadding", {
-                PaddingLeft = UDim.new(0,7+4),
-                PaddingRight = UDim.new(0,7+4),
-            }),
-        }),
-        New("UIPadding", {
-            PaddingLeft = UDim.new(0,4),
-            PaddingRight = UDim.new(0,4),
-        })
-    })
-    
-    OpenButtonMain.Button = Button
-    
-    function OpenButtonMain:SetIcon(newIcon)
-        if Icon then
-            Icon:Destroy()
-        end
-        if newIcon then
-            Icon = Creator.Image(
-                newIcon,
-                Window.Title,
-                0,
-                Window.Folder,
-                "OpenButton",
-                true,
-                Window.IconThemed
-            )
-            Icon.Size = UDim2.new(0,22,0,22)
-            Icon.LayoutOrder = -1
-            Icon.Parent = OpenButtonMain.Button.TextButton
-        end
-    end
-    
-    if Window.Icon then
-        OpenButtonMain:SetIcon(Window.Icon)
-    end
-    
-    Creator.AddSignal(Button:GetPropertyChangedSignal("AbsoluteSize"), function()
-        Container.Size = UDim2.new(
-            0, Button.AbsoluteSize.X,
-            0, Button.AbsoluteSize.Y
-        )
-    end)
-    
-    Creator.AddSignal(Button.TextButton.MouseEnter, function()
-        Tween(Button.TextButton, .1, {BackgroundTransparency = .93}):Play()
-    end)
-    Creator.AddSignal(Button.TextButton.MouseLeave, function()
-        Tween(Button.TextButton, .1, {BackgroundTransparency = 1}):Play()
-    end)
-    
-    local DragModule = Creator.Drag(Container)
-    
-    -- เพิ่มระบบลากสำหรับมือถือ โดยไม่กระทบระบบเดิม
-    local touchData = {
-        isDragging = false,
-        dragStart = nil,
-        startPos = nil,
-        connection = nil
-    }
-    
-    -- สร้างฟังก์ชันสำหรับจัดการการลากบนมือถือ
-    local function setupMobileDrag()
-        -- เช็คว่ามี Container และใช้งานได้
-        if not Container then return end
-        
-        -- Event สำหรับเริ่มลาก
-        local beganConnection = Container.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch then
-                touchData.isDragging = true
-                touchData.dragStart = input.Position
-                touchData.startPos = Container.Position
-            end
-        end)
-        
-        -- Event สำหรับเปลี่ยนแปลงตำแหน่ง
-        local changedConnection = UserInputService.InputChanged:Connect(function(input)
-            if touchData.isDragging and input.UserInputType == Enum.UserInputType.Touch then
-                local delta = input.Position - touchData.dragStart
-                local newPos = UDim2.new(
-                    touchData.startPos.X.Scale,
-                    touchData.startPos.X.Offset + delta.X,
-                    touchData.startPos.Y.Scale,
-                    touchData.startPos.Y.Offset + delta.Y
-                )
-                Container.Position = newPos
-            end
-        end)
-        
-        -- Event สำหรับสิ้นสุดการลาก
-        local endedConnection = UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.Touch then
-                touchData.isDragging = false
-                touchData.dragStart = nil
-                touchData.startPos = nil
-            end
-        end)
-        
-        -- เก็บ connections เพื่อใช้ในการ cleanup
-        touchData.connection = {
-            began = beganConnection,
-            changed = changedConnection,
-            ended = endedConnection
-        }
-    end
-    
-    -- เรียกใช้ระบบลากสำหรับมือถือ
-    setupMobileDrag()
-    
-    function OpenButtonMain:Visible(v)
-        Container.Visible = v
-    end
-    
-    function OpenButtonMain:SetScale(scale)
-        UIScale.Scale = scale
-    end
-    
-    function OpenButtonMain:Edit(OpenButtonConfig)
-        local OpenButtonModule = {
-            Title = OpenButtonConfig.Title,
-            Icon = OpenButtonConfig.Icon,
-            Enabled = OpenButtonConfig.Enabled,
-            Position = OpenButtonConfig.Position,
-            OnlyIcon = OpenButtonConfig.OnlyIcon or false,
-            Draggable = OpenButtonConfig.Draggable or nil,
-            OnlyMobile = OpenButtonConfig.OnlyMobile,
-            CornerRadius = OpenButtonConfig.CornerRadius or UDim.new(0, 12),
-            StrokeThickness = OpenButtonConfig.StrokeThickness or 2,
-            Scale = OpenButtonConfig.Scale or 1,
-            Color = OpenButtonConfig.Color 
-                or ColorSequence.new(Color3.fromHex("40c9ff"), Color3.fromHex("e81cff")),
-        }
-        
-        if OpenButtonModule.Enabled == false then
-            Window.IsOpenButtonEnabled = false
-        end
-        
-        if OpenButtonModule.OnlyMobile ~= false then
-            OpenButtonModule.OnlyMobile = true
-        else
-            Window.IsPC = false
-        end
-        
-        if OpenButtonModule.Draggable == false and Drag and Divider then
-            Drag.Visible = OpenButtonModule.Draggable
-            Divider.Visible = OpenButtonModule.Draggable
-            
-            if DragModule then
-                DragModule:Set(OpenButtonModule.Draggable)
-            end
-        end
-        
-        if OpenButtonModule.Position and Container then
-            Container.Position = OpenButtonModule.Position
-        end
-        
-        if OpenButtonModule.OnlyIcon == true and Title then
-            Title.Visible = false
-            Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7)
-            Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7)
-        elseif OpenButtonModule.OnlyIcon == false then
-            Title.Visible = true
-            Button.TextButton.UIPadding.PaddingLeft = UDim.new(0,7+4)
-            Button.TextButton.UIPadding.PaddingRight = UDim.new(0,7+4)
-        end
-        
-        if Title then
-            if OpenButtonModule.Title then
-                Title.Text = OpenButtonModule.Title
-                Creator:ChangeTranslationKey(Title, OpenButtonModule.Title)
-            elseif OpenButtonModule.Title == nil then
-                --Title.Visible = false
-            end
-        end
-        
-        if OpenButtonModule.Icon then
-            OpenButtonMain:SetIcon(OpenButtonModule.Icon)
-        end
-
-        -- ใช้สี Gradient จาก config (แต่ไม่ใช้กับพื้นหลังสีดำ)
-        if Glow then
-            Glow.UIGradient.Color = OpenButtonModule.Color
-        end
-
-        -- ตั้งค่า Corner Radius แบบ Square
-        Button.UICorner.CornerRadius = OpenButtonModule.CornerRadius
-        Button.TextButton.UICorner.CornerRadius = UDim.new(
-            OpenButtonModule.CornerRadius.Scale, 
-            math.max(0, OpenButtonModule.CornerRadius.Offset - 4)
-        )
-        Button.UIStroke.Thickness = OpenButtonModule.StrokeThickness
-        
-        OpenButtonMain:SetScale(OpenButtonModule.Scale)
-    end
-
-    return OpenButtonMain
+-- ลบของเก่าถ้ามี
+if Player.PlayerGui:FindFirstChild("PumpkitzOpenButton") then
+    Player.PlayerGui.PumpkitzOpenButton:Destroy()
 end
 
-return OpenButton
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PumpkitzOpenButton"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 999999
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+
+local OpenButton = Instance.new("ImageButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.fromOffset(40, 40)
+OpenButton.Position = UDim2.fromOffset(15, 120)
+OpenButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+OpenButton.BorderSizePixel = 0
+OpenButton.AutoButtonColor = true
+OpenButton.Image = "rbxassetid://75519083960535"
+OpenButton.ZIndex = 999999
+OpenButton.Visible = true
+OpenButton.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = OpenButton
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(255, 140, 0)
+Stroke.Thickness = 2
+Stroke.Parent = OpenButton
+
+-- ============================================================
+-- Drag System (ลากได้ทุกที่ ไม่มีขีดจำกัด)
+-- ============================================================
+
+local dragging = false
+local dragInput = nil
+local dragStart
+local startPos
+local moved = false
+
+OpenButton.InputBegan:Connect(function(input)
+    if input.UserInputType ~= Enum.UserInputType.Touch
+    and input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+        return
+    end
+
+    dragging = true
+    dragInput = input
+    dragStart = input.Position
+    startPos = OpenButton.Position
+    moved = false
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then
+        return
+    end
+
+    if input ~= dragInput then
+        return
+    end
+
+    local delta = input.Position - dragStart
+
+    if delta.Magnitude > 8 then
+        moved = true
+    end
+
+    -- ลบ math.clamp ออก เพื่อให้ลากไปได้ทุกที่
+    local newX = startPos.X.Offset + delta.X
+    local newY = startPos.Y.Offset + delta.Y
+
+    OpenButton.Position = UDim2.fromOffset(newX, newY)
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input ~= dragInput then
+        return
+    end
+
+    dragging = false
+    dragInput = nil
+
+    if not moved then
+        pcall(function()
+            Window:Open()
+        end)
+
+        OpenButton.Visible = false
+    end
+end)
+
+-- ============================================================
+-- แสดงปุ่มอีกครั้งเมื่อ GUI ถูกปิด
+-- ============================================================
+
+task.spawn(function()
+    while task.wait(0.2) do
+        local visible = false
+
+        pcall(function()
+            visible = Window.Visible
+        end)
+
+        if not visible then
+            OpenButton.Visible = true
+        end
+    end
+end)
+
+-- ============================================================
+-- ซ่อนปุ่ม WindUI Built-in
+-- ============================================================
+
+local function HideWindUIButtons()
+    for _, gui in ipairs(Player.PlayerGui:GetChildren()) do
+        if string.find(gui.Name, "WindUI") then
+            for _, obj in ipairs(gui:GetDescendants()) do
+                if obj:IsA("ImageButton") then
+                    if obj.Name == "OpenButton"
+                    or obj.Name == "FullScreen"
+                    or obj.Name == "Fullscreen"
+                    or obj.Name == "Maximize" then
+                        obj.Visible = false
+                        obj.Active = false
+                    end
+                end
+            end
+        end
+    end
+end
+
+task.wait(0.5)
+HideWindUIButtons()
+
+Player.PlayerGui.ChildAdded:Connect(function(gui)
+    if string.find(gui.Name, "WindUI") then
+        task.wait(0.2)
+        HideWindUIButtons()
+    end
+end)
+
+-- ============================================================
+-- Emergency Fix
+-- ============================================================
+_G.FixButton = function()
+    if OpenButton then
+        OpenButton.Visible = true
+        print("✅ OpenButton ถูกกู้คืนแล้ว!")
+    end
+end
