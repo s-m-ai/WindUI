@@ -122,37 +122,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- ซ่อนปุ่ม WindUI Built-in
--- ============================================================
-
-local function HideWindUIButtons()
-    for _, gui in ipairs(Player.PlayerGui:GetChildren()) do
-        if string.find(gui.Name, "WindUI") then
-            for _, obj in ipairs(gui:GetDescendants()) do
-                if obj:IsA("ImageButton") then
-                    if obj.Name == "OpenButton"
-                    or obj.Name == "FullScreen"
-                    or obj.Name == "Fullscreen"
-                    or obj.Name == "Maximize" then
-                        obj.Visible = false
-                        obj.Active = false
-                    end
-                end
-            end
-        end
-    end
-end
-
-task.wait(0.5)
-HideWindUIButtons()
-
-Player.PlayerGui.ChildAdded:Connect(function(gui)
-    if string.find(gui.Name, "WindUI") then
-        task.wait(0.2)
-        HideWindUIButtons()
-    end
-end)
 
 -- ============================================================
 -- Emergency Fix
